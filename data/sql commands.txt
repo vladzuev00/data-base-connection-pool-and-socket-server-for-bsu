@@ -1,0 +1,182 @@
+*********************************CREATIONS TABLES******************************
+1)
+CREATE TABLE IF NOT EXISTS position
+(
+	position_id SERIAL NOT NULL PRIMARY KEY,
+	name_of_position VARCHAR(30) NOT NULL
+);
+2)
+ALTER TABLE position
+	ADD CONSTRAINT correct_name_of_position CHECK (position.name_of_position LIKE '__%');
+3)
+CREATE TABLE IF NOT EXISTS employee
+(
+	employee_id INTEGER NOT NULL,
+    first_name VARCHAR(30) NOT NULL,
+	last_name VARCHAR(30) NOT NULL,
+	patronymic VARCHAR(30) NOT NULL,
+	salary MONEY NOT NULL,
+	position_id INTEGER NOT NULL,
+	team_leader_id INTEGER 
+);
+4)
+ALTER TABLE employee
+	ADD CONSTRAINT employee_primary_key PRIMARY KEY(employee_id);
+5)
+ALTER TABLE employee
+	ADD CONSTRAINT first_name_should_be_correct CHECK(first_name SIMILAR TO '[a-zA-Z]{3,}');
+6)
+ALTER TABLE employee
+	ADD CONSTRAINT last_name_should_be_correct CHECK(last_name SIMILAR TO '[a-zA-Z]{3,}');
+7)	
+ALTER TABLE employee
+	ADD CONSTRAINT patronymic_should_be_correct CHECK(patronymic SIMILAR TO '[a-zA-Z]{3,}');
+8)	
+ALTER TABLE employee
+	ADD CONSTRAINT employee_to_position_foreign_key FOREIGN KEY(position_id) REFERENCES position(position_id);
+9)	
+ALTER TABLE employee
+	ADD CONSTRAINT employee_to_employee_foreign_key FOREIGN KEY(team_leader_id) REFERENCES employee(employee_id);
+10)
+CREATE TABLE IF NOT EXISTS analyst
+(
+	analyst_id SERIAL NOT NULL,
+	subject_area VARCHAR(30) NOT NULL
+);
+11)
+ALTER TABLE analyst
+	ADD CONSTRAINT analyst_primary_key PRIMARY KEY(analyst_id);
+12)	
+ALTER TABLE analyst
+	ADD CONSTRAINT analyst_to_employee_foreign_key FOREIGN KEY(analyst_id) REFERENCES employee(employee_id);
+13)	
+ALTER TABLE analyst
+	ADD CONSTRAINT subject_area_should_be_correct CHECK(subject_area LIKE '_%');
+14)
+CREATE TYPE developer_qualification AS ENUM ('NOT DEFINED', 'JUNIOR', 'MIDDLE', 'SENIOR');
+15)
+CREATE TABLE IF NOT EXISTS developer
+(
+	developer_id INTEGER NOT NULL,
+	qualification developer_qualification NOT NULL
+);
+16)
+ALTER TABLE developer
+	ADD CONSTRAINT developer_primary_key PRIMARY KEY(developer_id);
+17)
+ALTER TABLE developer
+	ADD CONSTRAINT developer_to_employee_foreign_key FOREIGN KEY(developer_id) REFERENCES employee(employee_id);
+18)
+CREATE TABLE IF NOT EXISTS tester
+(
+	tester_id INTEGER NOT NULL,
+	amount_of_retrieved_errors INTEGER NOT NULL
+);
+19)
+ALTER TABLE tester
+	ADD CONSTRAINT tester_primary_key PRIMARY KEY(tester_id);
+20)
+ALTER TABLE tester
+	ADD CONSTRAINT tester_to_employee_foreign_key FOREIGN KEY(tester_id) REFERENCES employee(employee_id);
+21)
+ALTER TABLE tester
+	ADD CONSTRAINT amount_of_retrieved_errors_should_be_not_negative CHECK(amount_of_retrieved_errors >= 0);
+22)
+ALTER TABLE employee
+	ADD CONSTRAINT first_name_last_name_patronymic_should_be_unique UNIQUE(first_name, last_name, patronymic);
+23)
+ALTER TABLE employee
+	ADD CONSTRAINT team_leader_should_not_have_team_leader CHECK (position_id <> 4 OR (team_leader_id IS NULL));
+24)
+CREATE TABLE IF NOT EXISTS employee_for_testing
+(
+	employee_id INTEGER NOT NULL,
+    first_name VARCHAR(30) NOT NULL,
+	last_name VARCHAR(30) NOT NULL,
+	patronymic VARCHAR(30) NOT NULL,
+	salary MONEY NOT NULL
+);
+25)
+ALTER TABLE employee_for_testing
+	ADD CONSTRAINT employee_for_testing_primary_key PRIMARY KEY(employee_id);
+26)
+ALTER TABLE employee_for_testing
+	ADD CONSTRAINT employee_for_testing_first_name_should_be_correct CHECK(first_name SIMILAR TO '[a-zA-Z]{3,}');
+27)
+ALTER TABLE employee_for_testing
+	ADD CONSTRAINT employee_for_testing_last_name_should_be_correct CHECK(last_name SIMILAR TO '[a-zA-Z]{3,}');
+28)
+ALTER TABLE employee_for_testing
+	ADD CONSTRAINT employee_for_testing_patronymic_should_be_correct CHECK(patronymic SIMILAR TO '[a-zA-Z]{3,}');
+*********************************************INSERTIONS DATA AND UPDATINGS***************************************************
+1)
+INSERT INTO position (name_of_position)
+	VALUES ('Analyst'),
+		   ('Developer'),
+		   ('Tester'),
+		   ('Team leader');
+2)
+INSERT INTO employee (first_name, last_name, patronymic, salary, position_id)
+	VALUES ('Daniil', 'Timofeev', 'Egorovich', 500000.0, 4),
+		   ('Iljya', 'Zaycev', 'Kirilovich', 400000.0, 3),
+		   ('Iljya', 'Sobolev', 'Vladimirovich', 350000.0, 2),
+		   ('Aleksandr', 'Rjybov', 'Denisovich', 340000.0, 1),
+		   ('Egor', 'Sorokin', 'Zaharovich', 330000.0, 4),
+		   ('Milana', 'Knjyzevna', 'Romanovna', 320000.0, 3),
+		   ('Timur', 'Aleksandrov', 'Egorovich', 310000.0, 2),
+		   ('Veronika', 'Mitrofanovna', 'Davidovna', 300000.0, 1),
+		   ('Agnijya', 'Bolshakova', 'Egorovna', 290000.0, 4),
+		   ('Timofey', 'Smelev', 'Egorovich', 280000.0, 3);
+3)
+INSERT INTO analyst (analyst_id, subject_area)
+SELECT employee.employee_id, 'not defined'
+FROM employee
+WHERE employee.position_id = (SELECT position.position_id
+							  FROM position
+							  WHERE position.name_of_position = 'Analyst');
+4)
+UPDATE analyst
+SET subject_area = 'marketing'
+WHERE analyst_id = 5;
+5)
+UPDATE analyst
+SET subject_area = 'banks'
+WHERE analyst_id = 9;
+6)
+INSERT INTO developer (developer_id, qualification)					
+SELECT employee.employee_id, 'NOT DEFINED'
+FROM employee
+WHERE employee.position_id = (SELECT position.position_id
+							  FROM position 
+							  WHERE position.name_of_position = 'Developer');
+7)
+UPDATE developer
+SET qualification = 'SENIOR'
+WHERE developer_id = 4;
+8)
+UPDATE developer
+SET qualification = 'JUNIOR'
+WHERE developer_id = 8;
+9)
+INSERT INTO tester
+SELECT employee.employee_id, 0
+FROM employee
+WHERE employee.position_id = (SELECT position.position_id 
+							  FROM position
+							  WHERE position.name_of_position = 'Tester');
+10)
+UPDATE tester
+SET amount_of_retrieved_errors = 4
+WHERE tester_id = 3;
+11)
+UPDATE tester
+SET amount_of_retrieved_errors = 8
+WHERE tester_id = 7;
+12)
+UPDATE tester
+SET amount_of_retrieved_errors = 12
+WHERE tester_id = 11;
+13)
+INSERT INTO employee_for_testing
+SELECT employee.employee_id, employee.first_name, employee.last_name, employee.patronymic, employee.salary
+FROM employee;				
